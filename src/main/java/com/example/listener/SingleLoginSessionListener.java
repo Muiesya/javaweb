@@ -1,11 +1,11 @@
 package com.example.listener;
 
 import com.example.model.User;
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpSessionAttributeEvent;
-import jakarta.servlet.http.HttpSessionAttributeListener;
-import jakarta.servlet.http.HttpSessionEvent;
-import jakarta.servlet.http.HttpSessionListener;
+import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionAttributeEvent;
+import javax.servlet.http.HttpSessionAttributeListener;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
