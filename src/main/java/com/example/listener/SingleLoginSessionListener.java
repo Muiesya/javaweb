@@ -2,8 +2,8 @@ package com.example.listener;
 
 import com.example.model.User;
 import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionAttributeEvent;
 import javax.servlet.http.HttpSessionAttributeListener;
+import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
@@ -18,17 +18,17 @@ public class SingleLoginSessionListener implements HttpSessionAttributeListener,
     private static final Map<String, HttpSession> SESSION_BY_USER = new ConcurrentHashMap<>();
 
     @Override
-    public void attributeAdded(HttpSessionAttributeEvent event) {
+    public void attributeAdded(HttpSessionBindingEvent event) {
         handleUserChange(event);
     }
 
     @Override
-    public void attributeReplaced(HttpSessionAttributeEvent event) {
+    public void attributeReplaced(HttpSessionBindingEvent event) {
         handleUserChange(event);
     }
 
     @Override
-    public void attributeRemoved(HttpSessionAttributeEvent event) {
+    public void attributeRemoved(HttpSessionBindingEvent event) {
         if ("currentUser".equals(event.getName())) {
             User removed = (User) event.getValue();
             if (removed != null) {
@@ -43,7 +43,7 @@ public class SingleLoginSessionListener implements HttpSessionAttributeListener,
         SESSION_BY_USER.entrySet().removeIf(entry -> entry.getValue().getId().equals(session.getId()));
     }
 
-    private void handleUserChange(HttpSessionAttributeEvent event) {
+    private void handleUserChange(HttpSessionBindingEvent event) {
         if (!"currentUser".equals(event.getName())) {
             return;
         }
