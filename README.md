@@ -9,4 +9,5 @@
    ```bash
    mvn jetty:run
    ```
-4. 访问 <http://localhost:8080/> 体验中药材列表、购物车及药材信息管理页面。
+4. 当前项目使用 **Jakarta Servlet 5** 依赖，适配 Tomcat 10 / Jetty 11 及以上版本；如需在老版本容器运行，请切换到对应的 `javax.servlet` 依赖。
+5. 访问 <http://localhost:8080/> 体验中药材列表、购物车及药材信息管理页面。
