@@ -58,11 +58,11 @@ public class CartServlet extends HttpServlet {
 
         String name = fallbackName != null ? fallbackName : "";
 
-        // 从数据库读取药材的最新名称和价格信息
+        // 从数据库读取药材的最新名称和价格信息，如果数据库不可用则使用回退数据
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {
-            throw new ServletException("无法加载数据库驱动", e);
+            getServletContext().log("未找到MySQL驱动，使用提交的名称和价格作为回退", e);
         }
 
         try (Connection conn = DriverManager.getConnection(
@@ -86,7 +86,7 @@ public class CartServlet extends HttpServlet {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            getServletContext().log("查询数据库获取药材信息失败，使用回退数据", e);
         }
 
         if (name == null || name.isEmpty()) {
