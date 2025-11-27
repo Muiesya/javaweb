@@ -25,7 +25,8 @@
             String dosage_and_usage = request.getParameter("dosage_and_usage");
 
             try {
-                conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/DBcm?useUnicode=true&characterEncoding=utf8", "root", "87609215Bb@");
+                Class.forName("com.mysql.cj.jdbc.Driver");
+                conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/DBcm?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai", "root", "87609215Bb@");
                 String updateSql = "UPDATE medicine SET code=?, name=?, alias=?, origin=?, growth_environment=?, taste_and_property=?, main_function=?, dosage_and_usage=? WHERE id=?";
                 psmt = conn.prepareStatement(updateSql);
                 psmt.setString(1, code);
@@ -46,7 +47,8 @@
         } else {
             // 获取当前药材信息并填充到表单
             try {
-                conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/DBcm?useUnicode=true&characterEncoding=utf8", "root", "87609215Bb@");
+                Class.forName("com.mysql.cj.jdbc.Driver");
+                conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/DBcm?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai", "root", "87609215Bb@");
                 String selectSql = "SELECT * FROM medicine WHERE id=?";
                 psmt = conn.prepareStatement(selectSql);
                 psmt.setInt(1, id);

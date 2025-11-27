@@ -10,7 +10,8 @@
         Connection conn = null;
         PreparedStatement psmt = null;
         try {
-            conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/DBcm?useUnicode=true&characterEncoding=utf8", "root", "87609215Bb@");
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/DBcm?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai", "root", "87609215Bb@");
             String delsql = "DELETE FROM medicine WHERE id = ?";
             psmt = conn.prepareStatement(delsql);
             psmt.setInt(1, id);

@@ -23,7 +23,8 @@
                 Statement stmt = null;
                 ResultSet rs = null;
                 try {
-                    String url = "jdbc:mysql://127.0.0.1:3306/DBcm?useUnicode=true&characterEncoding=utf8";
+                    Class.forName("com.mysql.cj.jdbc.Driver");
+                    String url = "jdbc:mysql://127.0.0.1:3306/DBcm?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai";
                     String username = "root";
                     String password = "87609215Bb@"; // 替换为你的数据库密码
                     conn = DriverManager.getConnection(url, username, password);
