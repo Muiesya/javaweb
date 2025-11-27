@@ -1,5 +1,8 @@
 <%@ page contentType="text/html; charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%
+    String error = (String) request.getAttribute("error");
+    String captchaValue = (String) request.getAttribute("captcha");
+%>
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -33,9 +36,9 @@
 <body>
 <div class="container">
     <h2>登陆</h2>
-    <c:if test="${not empty error}">
-        <div class="error">${error}</div>
-    </c:if>
+    <% if (error != null) { %>
+        <div class="error"><%= error %></div>
+    <% } %>
     <form action="${pageContext.request.contextPath}/login" method="post" onsubmit="return validateForm()">
         <div class="field">
             <label for="account">账号</label>
@@ -49,7 +52,7 @@
             <label for="captcha">验证码</label>
             <div class="captcha-box">
                 <input type="text" id="captcha" name="captcha" maxlength="5" required>
-                <div class="captcha-text">${captcha}</div>
+                <div class="captcha-text"><%= captchaValue == null ? "" : captchaValue %></div>
                 <button type="button" onclick="window.location.reload()">刷新</button>
             </div>
         </div>
