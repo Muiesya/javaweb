@@ -54,6 +54,7 @@
     </listener>
 
     <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
         <welcome-file>herbList.jsp</welcome-file>
         <welcome-file>medicine_list.jsp</welcome-file>
     </welcome-file-list>
