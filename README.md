@@ -9,5 +9,5 @@
    ```bash
    mvn -DskipTests package
    ```
-4. 将生成的 `target/javaweb-1.0-SNAPSHOT.war` 放入 Tomcat 9 等 Servlet 4（`javax.servlet`）容器的 `webapps` 目录，或在 IDE 中配置 Tomcat 运行。
-5. 启动容器后访问 <http://localhost:8080/javaweb-1.0-SNAPSHOT/> 体验中药材列表、购物车及药材信息管理页面。
+4. 将生成的 `target/javaweb9.war` 放入 Tomcat 9 等 Servlet 4（`javax.servlet`）容器的 `webapps` 目录，或在 IDE 中配置 Tomcat 运行。
+5. 启动容器后访问 <http://localhost:8080/javaweb9/> 进入登陆页，体验基本登陆、会话检查与单点登录功能（其他示例页面仍可按需访问）。
