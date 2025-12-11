@@ -2,12 +2,12 @@ package com.example.servlet;
 
 import com.example.model.CartItem;
 
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -58,9 +58,15 @@ public class CartServlet extends HttpServlet {
 
         String name = fallbackName != null ? fallbackName : "";
 
-        // 从数据库读取药材的最新名称和价格信息
+        // 从数据库读取药材的最新名称和价格信息，如果数据库不可用则使用回退数据
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            getServletContext().log("未找到MySQL驱动，使用提交的名称和价格作为回退", e);
+        }
+
         try (Connection conn = DriverManager.getConnection(
-                "jdbc:mysql://127.0.0.1:3306/DBcm?useUnicode=true&characterEncoding=utf8",
+                "jdbc:mysql://127.0.0.1:3306/DBcm?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai",
                 "root",
                 "87609215Bb@"
         );
@@ -80,7 +86,7 @@ public class CartServlet extends HttpServlet {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            getServletContext().log("查询数据库获取药材信息失败，使用回退数据", e);
         }
 
         if (name == null || name.isEmpty()) {
