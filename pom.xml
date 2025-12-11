@@ -30,7 +30,7 @@
     </dependencies>
 
     <build>
-        <finalName>javaweb9</finalName>
+        <finalName>javaweb</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
