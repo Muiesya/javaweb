@@ -16,6 +16,7 @@
 <% } else { %>
     <p>未获取到用户信息，请重新登陆。</p>
 <% } %>
+<p><a href="<%=request.getContextPath()%>/mall.jsp">进入选购大厅</a> | <a href="<%=request.getContextPath()%>/cart.jsp">查看购物车</a></p>
 <p><a href="${pageContext.request.contextPath}/login">返回登陆页</a></p>
 </body>
 </html>

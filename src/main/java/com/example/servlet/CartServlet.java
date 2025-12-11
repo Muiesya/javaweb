@@ -1,127 +1,162 @@
 package com.example.servlet;
 
-import com.example.model.CartItem;
-
+import com.example.dao.MedicineDAO;
+import com.example.dao.OrderDAO;
+import com.example.model.Medicine;
+import com.example.model.Order;
+import com.example.model.OrderItem;
+import com.example.model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @WebServlet(name = "CartServlet", urlPatterns = "/cart")
 public class CartServlet extends HttpServlet {
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        request.setCharacterEncoding("UTF-8");
-        response.setCharacterEncoding("UTF-8");
-
-        String id = request.getParameter("id");
-        String fallbackName = request.getParameter("fallbackName");
-        String fallbackPriceStr = request.getParameter("fallbackPrice");
-        String quantityStr = request.getParameter("quantity");
-
-        int herbId;
-        try {
-            herbId = Integer.parseInt(id);
-        } catch (NumberFormatException e) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "无效的药材编号");
-            return;
-        }
-
-        double price = 0;
-        int quantity = 0;
-
-        try {
-            quantity = Integer.parseInt(quantityStr);
-        } catch (NumberFormatException e) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "数量格式不正确");
-            return;
-        }
-
-        if (fallbackPriceStr != null) {
-            try {
-                price = Double.parseDouble(fallbackPriceStr);
-            } catch (NumberFormatException ignored) {
-                price = 0;
-            }
-        }
-
-        String name = fallbackName != null ? fallbackName : "";
-
-        // 从数据库读取药材的最新名称和价格信息，如果数据库不可用则使用回退数据
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-        } catch (ClassNotFoundException e) {
-            getServletContext().log("未找到MySQL驱动，使用提交的名称和价格作为回退", e);
-        }
-
-        try (Connection conn = DriverManager.getConnection(
-                "jdbc:mysql://127.0.0.1:3306/DBcm?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai",
-                "root",
-                "87609215Bb@"
-        );
-             PreparedStatement pstmt = conn.prepareStatement("SELECT name, price FROM medicine WHERE id = ?")) {
-            pstmt.setInt(1, herbId);
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    String dbName = rs.getString("name");
-                    if (dbName != null) {
-                        name = dbName;
-                    }
-                    try {
-                        price = rs.getDouble("price");
-                    } catch (SQLException ignored) {
-                        // 如果字段不存在或读取失败则保持回退价格
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            getServletContext().log("查询数据库获取药材信息失败，使用回退数据", e);
-        }
-
-        if (name == null || name.isEmpty()) {
-            name = request.getParameter("name");
-        }
-
-        HttpSession session = request.getSession();
-        List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
-        if (cart == null) {
-            cart = new ArrayList<>();
-        }
-
-        boolean found = false;
-        for (CartItem item : cart) {
-            if (item.getId().equals(id)) {
-                item.setQuantity(item.getQuantity() + quantity);
-                found = true;
-                break;
-            }
-        }
-
-        if (!found) {
-            cart.add(new CartItem(id, name, price, quantity));
-        }
-
-        session.setAttribute("cart", cart);
-        response.sendRedirect("cartDetail.jsp");
-    }
+    private final MedicineDAO medicineDAO = new MedicineDAO();
+    private final OrderDAO orderDAO = new OrderDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        HttpSession session = request.getSession();
-        if (session.getAttribute("cart") == null) {
-            session.setAttribute("cart", new ArrayList<CartItem>());
+        String action = request.getParameter("action");
+        if ("add".equalsIgnoreCase(action)) {
+            handleAddToCart(request, response);
+            return;
         }
-        request.getRequestDispatcher("cartDetail.jsp").forward(request, response);
+        HttpSession session = request.getSession();
+        request.setAttribute("cartItems", getCart(session));
+        request.getRequestDispatcher("/cart.jsp").forward(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String action = request.getParameter("action");
+        if ("add".equalsIgnoreCase(action)) {
+            handleAddToCart(request, response);
+        } else if ("checkout".equalsIgnoreCase(action)) {
+            handleCheckout(request, response);
+        } else {
+            response.sendRedirect(request.getContextPath() + "/cart.jsp");
+        }
+    }
+
+    private void handleAddToCart(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        String idStr = request.getParameter("id");
+        String quantityStr = request.getParameter("quantity");
+        int medicineId;
+        int quantity;
+        try {
+            medicineId = Integer.parseInt(idStr);
+            quantity = Integer.parseInt(quantityStr);
+        } catch (NumberFormatException e) {
+            request.setAttribute("error", "参数错误，无法加入购物车。");
+            request.getRequestDispatcher("/mall.jsp").forward(request, response);
+            return;
+        }
+        if (quantity <= 0) {
+            quantity = 1;
+        }
+
+        Medicine medicine;
+        try {
+            medicine = medicineDAO.findById(medicineId);
+        } catch (SQLException e) {
+            getServletContext().log("查询药材失败", e);
+            request.setAttribute("error", "读取药材信息失败，稍后再试。");
+            request.getRequestDispatcher("/mall.jsp").forward(request, response);
+            return;
+        }
+        if (medicine == null) {
+            request.setAttribute("error", "未找到指定的药材。");
+            request.getRequestDispatcher("/mall.jsp").forward(request, response);
+            return;
+        }
+
+        HttpSession session = request.getSession();
+        List<OrderItem> cart = getCart(session);
+        boolean merged = false;
+        for (OrderItem item : cart) {
+            if (item.getMedicineId() == medicineId) {
+                item.setQuantity(item.getQuantity() + quantity);
+                merged = true;
+                break;
+            }
+        }
+        if (!merged) {
+            cart.add(new OrderItem(0, null, medicineId, medicine.getName(), quantity, medicine.getPrice()));
+        }
+        session.setAttribute("shoppingCart", cart);
+        response.sendRedirect(request.getContextPath() + "/mall.jsp");
+    }
+
+    private void handleCheckout(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        HttpSession session = request.getSession();
+        List<OrderItem> cart = getCart(session);
+        if (cart.isEmpty()) {
+            request.setAttribute("cartError", "购物车为空，无法结算。");
+            request.setAttribute("cartItems", cart);
+            request.getRequestDispatcher("/cart.jsp").forward(request, response);
+            return;
+        }
+
+        String address = request.getParameter("address");
+        if (address == null || address.trim().isEmpty()) {
+            request.setAttribute("cartError", "请填写收货地址。");
+            request.setAttribute("cartItems", cart);
+            request.getRequestDispatcher("/cart.jsp").forward(request, response);
+            return;
+        }
+
+        String userName = "游客";
+        Object userObj = session.getAttribute("currentUser");
+        if (userObj instanceof User) {
+            User user = (User) userObj;
+            userName = user.getDisplayName() + " (" + user.getUsername() + ")";
+        }
+
+        double total = 0;
+        for (OrderItem item : cart) {
+            total += item.getSubTotal();
+        }
+
+        String orderId = generateOrderId();
+        Order order = new Order(orderId, userName, address.trim(), total, new Timestamp(System.currentTimeMillis()), new ArrayList<>(cart));
+
+        try {
+            orderDAO.saveOrder(order);
+        } catch (SQLException e) {
+            // 为了让示例在无数据库环境下也能跑通，这里记录错误但继续显示成功页面
+            getServletContext().log("保存订单失败，使用演示流程继续", e);
+            request.setAttribute("orderWarning", "订单已生成用于演示，未写入数据库: " + e.getMessage());
+        }
+
+        session.removeAttribute("shoppingCart");
+        request.setAttribute("orderId", orderId);
+        request.setAttribute("totalAmount", total);
+        request.getRequestDispatcher("/order_success.jsp").forward(request, response);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<OrderItem> getCart(HttpSession session) {
+        Object cartObj = session.getAttribute("shoppingCart");
+        if (cartObj instanceof List) {
+            return (List<OrderItem>) cartObj;
+        }
+        List<OrderItem> newCart = new ArrayList<>();
+        session.setAttribute("shoppingCart", newCart);
+        return newCart;
+    }
+
+    private String generateOrderId() {
+        return "ORD-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
     }
 }
