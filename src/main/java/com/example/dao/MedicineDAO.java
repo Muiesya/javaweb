@@ -33,6 +33,7 @@ public class MedicineDAO {
         demo1.setPrice(199.0);
         demo1.setStock(50);
         demo1.setGrowthEnvironment("东北山林");
+        demo1.setMainFunction("大补元气");
         SAMPLE_MEDICINES.add(demo1);
 
         Medicine demo2 = new Medicine();
@@ -43,11 +44,12 @@ public class MedicineDAO {
         demo2.setPrice(39.9);
         demo2.setStock(200);
         demo2.setGrowthEnvironment("宁夏");
+        demo2.setMainFunction("滋补肝肾");
         SAMPLE_MEDICINES.add(demo2);
     }
 
     public List<Medicine> findAll() throws SQLException {
-        String sql = "SELECT id, code, name, alias, price, stock, growth_environment FROM medicine ORDER BY id DESC";
+        String sql = "SELECT id, code, name, alias, price, stock, growth_environment, main_function FROM medicine ORDER BY id DESC";
         try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -64,7 +66,7 @@ public class MedicineDAO {
     }
 
     public Medicine findById(int id) throws SQLException {
-        String sql = "SELECT id, code, name, alias, price, stock, growth_environment FROM medicine WHERE id = ?";
+        String sql = "SELECT id, code, name, alias, price, stock, growth_environment, main_function FROM medicine WHERE id = ?";
         try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -82,6 +84,73 @@ public class MedicineDAO {
             System.err.println("读取数据库失败且未找到演示药材: " + e.getMessage());
         }
         return null;
+    }
+
+    public List<Medicine> search(String keyword) throws SQLException {
+        String like = "%" + (keyword == null ? "" : keyword.trim()) + "%";
+        String sql = "SELECT id, code, name, alias, price, stock, growth_environment, main_function FROM medicine " +
+                "WHERE code LIKE ? OR name LIKE ? OR alias LIKE ? OR main_function LIKE ? ORDER BY id DESC";
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (int i = 1; i <= 4; i++) {
+                ps.setString(i, like);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Medicine> list = new ArrayList<>();
+                while (rs.next()) {
+                    list.add(mapRow(rs));
+                }
+                return list;
+            }
+        } catch (SQLException e) {
+            System.err.println("数据库搜索失败，返回演示药材数据: " + e.getMessage());
+            List<Medicine> fallback = new ArrayList<>();
+            for (Medicine medicine : SAMPLE_MEDICINES) {
+                if (keyword == null || keyword.trim().isEmpty()) {
+                    fallback.add(medicine);
+                } else {
+                    String key = keyword.trim();
+                    if ((medicine.getCode() != null && medicine.getCode().contains(key)) ||
+                            (medicine.getName() != null && medicine.getName().contains(key)) ||
+                            (medicine.getAlias() != null && medicine.getAlias().contains(key)) ||
+                            (medicine.getMainFunction() != null && medicine.getMainFunction().contains(key))) {
+                        fallback.add(medicine);
+                    }
+                }
+            }
+            return fallback;
+        }
+    }
+
+    public boolean deleteById(int id) throws SQLException {
+        String sql = "DELETE FROM medicine WHERE id = ?";
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            int rows = ps.executeUpdate();
+            return rows > 0;
+        }
+    }
+
+    public boolean existsByCode(String code) throws SQLException {
+        String sql = "SELECT COUNT(1) FROM medicine WHERE code = ?";
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, code);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            for (Medicine medicine : SAMPLE_MEDICINES) {
+                if (medicine.getCode() != null && medicine.getCode().equalsIgnoreCase(code)) {
+                    return true;
+                }
+            }
+            System.err.println("检查编码失败: " + e.getMessage());
+        }
+        return false;
     }
 
     private Medicine mapRow(ResultSet rs) throws SQLException {
@@ -104,6 +173,11 @@ public class MedicineDAO {
             medicine.setGrowthEnvironment(rs.getString("growth_environment"));
         } catch (SQLException ignored) {
             medicine.setGrowthEnvironment(null);
+        }
+        try {
+            medicine.setMainFunction(rs.getString("main_function"));
+        } catch (SQLException ignored) {
+            medicine.setMainFunction(null);
         }
         return medicine;
     }

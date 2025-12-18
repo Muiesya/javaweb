@@ -70,10 +70,10 @@
     <% if (error != null) { %>
         <p style="color: red;"><%= error %></p>
     <% } %>
-    <form method="post">
+    <form method="post" id="editForm">
         <input type="hidden" name="id" value="<%= id %>">
         <table>
-            <tr><td>编号:</td><td><input type="text" name="code" value="<%= rs.getString("code") %>"></td></tr>
+            <tr><td>编号:</td><td><input type="text" name="code" id="codeInput" value="<%= rs.getString("code") %>"> <span id="codeMsg" style="color:#d00;"></span></td></tr>
             <tr><td>中药名:</td><td><input type="text" name="name" value="<%= rs.getString("name") %>"></td></tr>
             <tr><td>别名:</td><td><input type="text" name="alias" value="<%= rs.getString("alias") %>"></td></tr>
             <tr><td>来源:</td><td><input type="text" name="origin" value="<%= rs.getString("origin") %>"></td></tr>
@@ -84,6 +84,53 @@
         </table>
         <input type="submit" value="提交修改">
     </form>
+    <script>
+        (function() {
+            const ctx = '<%=request.getContextPath()%>';
+            const codeInput = document.getElementById('codeInput');
+            const codeMsg = document.getElementById('codeMsg');
+            let codeValid = true;
+
+            codeInput.addEventListener('blur', () => {
+                const val = codeInput.value.trim();
+                if (!val) {
+                    codeMsg.textContent = '编号不能为空';
+                    codeValid = false;
+                    return;
+                }
+                fetch(ctx + '/api/medicine?op=check&code=' + encodeURIComponent(val))
+                    .then(resp => resp.json())
+                    .then(data => {
+                        if (!data.success) {
+                            codeMsg.textContent = data.message || '检查失败';
+                            codeValid = false;
+                            return;
+                        }
+                        const exists = data.exists;
+                        // 如果是原编号，认为合法
+                        const original = '<%= rs.getString("code") %>';
+                        if (exists && original !== val) {
+                            codeMsg.textContent = '编号已存在，请更换';
+                            codeValid = false;
+                        } else {
+                            codeMsg.textContent = '';
+                            codeValid = true;
+                        }
+                    })
+                    .catch(err => {
+                        codeMsg.textContent = '检查出错: ' + err;
+                        codeValid = false;
+                    });
+            });
+
+            document.getElementById('editForm').addEventListener('submit', (e) => {
+                if (!codeValid) {
+                    e.preventDefault();
+                    alert('请先通过编号唯一性校验');
+                }
+            });
+        })();
+    </script>
 <%
             } else {
                 error = "未找到相关药材";

@@ -30,7 +30,12 @@
     </dependencies>
 
     <build>
-        <finalName>javaweb</finalName>
+        <!--
+         | Deploy as ROOT.war so Tomcat serves the app at the server root (/)
+         | without needing to remember a context path. This avoids 404s when
+         | the artifact name and configured context differ.
+         -->
+        <finalName>ROOT</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

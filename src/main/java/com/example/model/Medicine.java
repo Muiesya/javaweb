@@ -8,6 +8,7 @@ public class Medicine {
     private double price;
     private int stock;
     private String growthEnvironment;
+    private String mainFunction;
 
     public Medicine() {
     }
@@ -20,6 +21,11 @@ public class Medicine {
         this.price = price;
         this.stock = stock;
         this.growthEnvironment = growthEnvironment;
+    }
+
+    public Medicine(int id, String code, String name, String alias, double price, int stock, String growthEnvironment, String mainFunction) {
+        this(id, code, name, alias, price, stock, growthEnvironment);
+        this.mainFunction = mainFunction;
     }
 
     public int getId() {
@@ -76,5 +82,13 @@ public class Medicine {
 
     public void setGrowthEnvironment(String growthEnvironment) {
         this.growthEnvironment = growthEnvironment;
+    }
+
+    public String getMainFunction() {
+        return mainFunction;
+    }
+
+    public void setMainFunction(String mainFunction) {
+        this.mainFunction = mainFunction;
     }
 }

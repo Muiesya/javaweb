@@ -23,6 +23,15 @@
         <url-pattern>/login</url-pattern>
     </servlet-mapping>
 
+    <servlet>
+        <servlet-name>MedicineApiServlet</servlet-name>
+        <servlet-class>com.example.servlet.MedicineApiServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MedicineApiServlet</servlet-name>
+        <url-pattern>/api/medicine</url-pattern>
+    </servlet-mapping>
+
     <filter>
         <filter-name>EncodingFilter</filter-name>
         <filter-class>com.example.filter.EncodingFilter</filter-class>
