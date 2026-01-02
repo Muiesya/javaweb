@@ -9,6 +9,7 @@ public class Medicine {
     private int stock;
     private String growthEnvironment;
     private String mainFunction;
+    private String photoPath;
 
     public Medicine() {
     }
@@ -90,5 +91,13 @@ public class Medicine {
 
     public void setMainFunction(String mainFunction) {
         this.mainFunction = mainFunction;
+    }
+
+    public String getPhotoPath() {
+        return photoPath;
+    }
+
+    public void setPhotoPath(String photoPath) {
+        this.photoPath = photoPath;
     }
 }

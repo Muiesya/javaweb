@@ -49,7 +49,7 @@ public class MedicineDAO {
     }
 
     public List<Medicine> findAll() throws SQLException {
-        String sql = "SELECT id, code, name, alias, price, stock, growth_environment, main_function FROM medicine ORDER BY id DESC";
+        String sql = "SELECT id, code, name, alias, price, stock, growth_environment, main_function, photo_path FROM medicine ORDER BY id DESC";
         try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -66,7 +66,7 @@ public class MedicineDAO {
     }
 
     public Medicine findById(int id) throws SQLException {
-        String sql = "SELECT id, code, name, alias, price, stock, growth_environment, main_function FROM medicine WHERE id = ?";
+        String sql = "SELECT id, code, name, alias, price, stock, growth_environment, main_function, photo_path FROM medicine WHERE id = ?";
         try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -86,9 +86,41 @@ public class MedicineDAO {
         return null;
     }
 
+    public List<Medicine> search(String keyword, int page, int size) throws SQLException {
+        int pageSize = Math.max(size, 1);
+        int offset = (Math.max(page, 1) - 1) * pageSize;
+        String like = "%" + (keyword == null ? "" : keyword.trim()) + "%";
+        String sql = "SELECT id, code, name, alias, price, stock, growth_environment, main_function, photo_path FROM medicine " +
+                "WHERE code LIKE ? OR name LIKE ? OR alias LIKE ? OR main_function LIKE ? ORDER BY id DESC LIMIT ? OFFSET ?";
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (int i = 1; i <= 4; i++) {
+                ps.setString(i, like);
+            }
+            ps.setInt(5, pageSize);
+            ps.setInt(6, offset);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Medicine> list = new ArrayList<>();
+                while (rs.next()) {
+                    list.add(mapRow(rs));
+                }
+                return list;
+            }
+        } catch (SQLException e) {
+            System.err.println("数据库搜索失败，返回演示药材数据: " + e.getMessage());
+            List<Medicine> fallback = search(keyword);
+            if (fallback.isEmpty()) {
+                return fallback;
+            }
+            int from = Math.min(offset, fallback.size());
+            int to = Math.min(from + pageSize, fallback.size());
+            return fallback.subList(from, to);
+        }
+    }
+
     public List<Medicine> search(String keyword) throws SQLException {
         String like = "%" + (keyword == null ? "" : keyword.trim()) + "%";
-        String sql = "SELECT id, code, name, alias, price, stock, growth_environment, main_function FROM medicine " +
+        String sql = "SELECT id, code, name, alias, price, stock, growth_environment, main_function, photo_path FROM medicine " +
                 "WHERE code LIKE ? OR name LIKE ? OR alias LIKE ? OR main_function LIKE ? ORDER BY id DESC";
         try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -119,6 +151,65 @@ public class MedicineDAO {
                 }
             }
             return fallback;
+        }
+    }
+
+    public int count(String keyword) throws SQLException {
+        String like = "%" + (keyword == null ? "" : keyword.trim()) + "%";
+        String sql = "SELECT COUNT(1) FROM medicine WHERE code LIKE ? OR name LIKE ? OR alias LIKE ? OR main_function LIKE ?";
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (int i = 1; i <= 4; i++) {
+                ps.setString(i, like);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+            return 0;
+        } catch (SQLException e) {
+            System.err.println("统计药材失败，返回演示数据数量: " + e.getMessage());
+            return search(keyword).size();
+        }
+    }
+
+    public int save(Medicine medicine) throws SQLException {
+        String sql = "INSERT INTO medicine(code, name, alias, price, stock, growth_environment, main_function, photo_path) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, medicine.getCode());
+            ps.setString(2, medicine.getName());
+            ps.setString(3, medicine.getAlias());
+            ps.setDouble(4, medicine.getPrice());
+            ps.setInt(5, medicine.getStock());
+            ps.setString(6, medicine.getGrowthEnvironment());
+            ps.setString(7, medicine.getMainFunction());
+            ps.setString(8, medicine.getPhotoPath());
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        return -1;
+    }
+
+    public boolean update(Medicine medicine) throws SQLException {
+        String sql = "UPDATE medicine SET code=?, name=?, alias=?, price=?, stock=?, growth_environment=?, main_function=?, photo_path=? WHERE id=?";
+        try (Connection conn = DriverManager.getConnection(JDBC_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, medicine.getCode());
+            ps.setString(2, medicine.getName());
+            ps.setString(3, medicine.getAlias());
+            ps.setDouble(4, medicine.getPrice());
+            ps.setInt(5, medicine.getStock());
+            ps.setString(6, medicine.getGrowthEnvironment());
+            ps.setString(7, medicine.getMainFunction());
+            ps.setString(8, medicine.getPhotoPath());
+            ps.setInt(9, medicine.getId());
+            return ps.executeUpdate() > 0;
         }
     }
 
@@ -178,6 +269,11 @@ public class MedicineDAO {
             medicine.setMainFunction(rs.getString("main_function"));
         } catch (SQLException ignored) {
             medicine.setMainFunction(null);
+        }
+        try {
+            medicine.setPhotoPath(rs.getString("photo_path"));
+        } catch (SQLException ignored) {
+            medicine.setPhotoPath(null);
         }
         return medicine;
     }
