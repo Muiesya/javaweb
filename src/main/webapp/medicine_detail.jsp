@@ -33,6 +33,16 @@
     <tr><td>性味</td><td><%= rs.getString("taste_and_property") %></td></tr>            
     <tr><td>主治功能</td><td><%= rs.getString("main_function") %></td></tr>            
     <tr><td>用法用量</td><td><%= rs.getString("dosage_and_usage") %></td></tr>
+    <tr><td>药材图片</td><td><%
+        String photoPath = rs.getString("photo_path");
+        if (photoPath != null && !photoPath.isEmpty()) {
+    %>
+        <img src="<%= request.getContextPath() + photoPath %>" alt="药材图片" style="max-height:160px;">
+    <%
+        } else {
+            out.print("暂无图片");
+        }
+    %></td></tr>
     </table>
     <%
             }else{

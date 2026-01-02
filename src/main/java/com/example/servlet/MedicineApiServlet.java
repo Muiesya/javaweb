@@ -45,10 +45,22 @@ public class MedicineApiServlet extends HttpServlet {
 
     private void handleSearch(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String keyword = req.getParameter("keyword");
+        int page = 1;
+        int size = 5;
+        try {
+            page = Integer.parseInt(req.getParameter("page"));
+        } catch (NumberFormatException ignored) { }
+        try {
+            size = Integer.parseInt(req.getParameter("size"));
+        } catch (NumberFormatException ignored) { }
+        if (size <= 0) {
+            size = 5;
+        }
         try (PrintWriter writer = resp.getWriter()) {
-            List<Medicine> medicines = medicineDAO.search(keyword);
+            List<Medicine> medicines = medicineDAO.search(keyword, page, size);
+            int total = medicineDAO.count(keyword);
             StringBuilder json = new StringBuilder();
-            json.append("{\"success\":true,\"data\":");
+            json.append("{\"success\":true,\"page\":").append(page).append(",\"size\":").append(size).append(",\"total\":").append(total).append(",\"data\":");
             json.append("[");
             for (int i = 0; i < medicines.size(); i++) {
                 Medicine m = medicines.get(i);
@@ -62,7 +74,8 @@ public class MedicineApiServlet extends HttpServlet {
                         .append("\"alias\":\"").append(escape(m.getAlias())).append("\",")
                         .append("\"price\":").append(m.getPrice()).append(',')
                         .append("\"stock\":").append(m.getStock()).append(',')
-                        .append("\"mainFunction\":\"").append(escape(m.getMainFunction())).append("\"")
+                        .append("\"mainFunction\":\"").append(escape(m.getMainFunction())).append("\",")
+                        .append("\"photoPath\":\"").append(escape(m.getPhotoPath())).append("\"")
                         .append('}');
             }
             json.append("]}");
